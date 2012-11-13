@@ -37,9 +37,9 @@
     </div>
     <div class="canvas-container">
         <h2>Viewport 2</h2>
-        <p>X, Y : -50,-50</p>
-        <p>W, H : 200,200</p>
-        <p>Scale : 200%</p>
+        <p>X, Y : 25,25</p>
+        <p>W, H : 50,50</p>
+        <p>Scale : 800%</p>
         <canvas id="viewport-2" width="400" height="400" style="border:1px solid #000;"></canvas>
     </div>
 
@@ -47,6 +47,16 @@
     <script>
         generation_counter = document.getElementById('generation-counter');
 
+        window.requestAnimFrame = (function(){
+          return  window.requestAnimationFrame       || 
+                  window.webkitRequestAnimationFrame || 
+                  window.mozRequestAnimationFrame    || 
+                  window.oRequestAnimationFrame      || 
+                  window.msRequestAnimationFrame     || 
+                  function( callback ){
+                    window.setTimeout(callback, 1000 / 60);
+                  };
+        })();
         function printGridToConsole(grid) {
             var x, xmax, y, ymax, row, str = '', state;
             for ( y=0, ymax=grid.length; y<ymax; y++ ) {
@@ -69,17 +79,33 @@
         // promise2.progress(printGridToConsole);
 
         function printGridToCanvas(context, grid, cell_size) {
-            context.clearRect(0, 0, grid.length*cell_size, grid[0].length*cell_size);
-            var x, xmax, y, ymax, row, state;
+
+            old_grid = context.old_grid;
+            //context.clearRect(0, 0, grid.length*cell_size, grid[0].length*cell_size);
+            var x, xmax, y, ymax, row, old_row, state, old_state;
             for ( y=0, ymax=grid.length; y<ymax; y++ ) {
                 row = grid[y];
+                if ( old_grid ) old_row = old_grid[y];
                 for ( x=0, xmax=row.length; x<xmax; x++ ) {
                     state = row[x];
-                    if ( state === true ) {
-                        context.fillRect(x*cell_size, y*cell_size, cell_size, cell_size);
+                    old_state = (old_grid) ? old_row[x] : false;
+                    if ( state === true && !old_state ) {
+                        drawCell(context, x*cell_size, y*cell_size, cell_size, cell_size);
+                    } else if ( !state && old_state ) {
+                        context.clearRect( x*cell_size, y*cell_size, cell_size, cell_size);
                     }
                 }
             }
+            context.old_grid = grid;
+        }
+        function drawCell(context, x, y, w, h) {
+            var x1 = x;
+            var x2 = x+w;
+            var lingrad = context.createLinearGradient(x1,y,x2,y+h);
+            lingrad.addColorStop(0, '#999');
+            lingrad.addColorStop(1, '#000');
+            context.fillStyle = lingrad;
+            context.fillRect(x, y, w, h);
         }
 
 
@@ -115,7 +141,7 @@
             // gol.setState(2, 2, true);
             gol.seedArea(40, 40, 20, 20, 0.3);
             promise1 = gol.getViewport(0, 0, 100, 100);
-            promise2 = gol.getViewport(-50, -50, 200, 200);
+            promise2 = gol.getViewport(25, 25, 50, 50);
             //promise2 = gol.getViewport(1, 1, 3, 3);
 
             var canvas1 = document.getElementById('viewport-1');
@@ -123,11 +149,11 @@
             var context1 = canvas1.getContext('2d');
             var context2 = canvas2.getContext('2d');
             var cell_size_1 = 4;
-            var cell_size_2 = 2;
+            var cell_size_2 = 8;
             context1.fillStyle = 'rgb(0, 0, 0)';
 
             promise1.progress(function(grid) {
-                printGridToCanvas(context1, grid, cell_size_1);
+                printGridToCanvas(context1, grid, cell_size_1, true);
             });
             promise2.progress(function(grid) {
                 printGridToCanvas(context2, grid, cell_size_2);
@@ -141,7 +167,8 @@
             generation_counter.innerHTML = count;
             if ( keep_animating ) {
                 count++;
-                setTimeout(loop, 1);
+                window.requestAnimFrame(loop);
+                //setTimeout(loop, 33);
             }
         };
 
