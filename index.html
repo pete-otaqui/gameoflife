@@ -1,0 +1,116 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>Game of Life</title>
+    <style>
+        body {
+            font-family: "OpenSans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        }
+        h1, h2 {
+            margin: 0;
+            padding: 0;
+        }
+        .canvas-container {
+             display: inline-block;
+        }
+        .canvas-container p {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Game of Life <span id="generation-counter"></span></h1>
+    <div class="canvas-container">
+        <h2>Viewport 1</h2>
+        <p>X, Y : 0,0</p>
+        <p>W, H : 100,100</p>
+        <p>Scale : 400%</p>
+        <canvas id="viewport-1" width="400" height="400" style="border:1px solid #000;"></canvas>
+    </div>
+    <div class="canvas-container">
+        <h2>Viewport 2</h2>
+        <p>X, Y : -50,-50</p>
+        <p>W, H : 200,200</p>
+        <p>Scale : 200%</p>
+        <canvas id="viewport-2" width="400" height="400" style="border:1px solid #000;"></canvas>
+    </div>
+
+    <script src="gameoflife.js"></script>
+    <script>
+        generation_counter = document.getElementById('generation-counter');
+        gol = new GameOfLife();
+        // gol.setState(1, 0, true);
+        // gol.setState(2, 1, true);
+        // gol.setState(0, 2, true);
+        // gol.setState(1, 2, true);
+        // gol.setState(2, 2, true);
+        gol.seedArea(40, 40, 20, 20, 0.3);
+        promise1 = gol.getViewport(0, 0, 100, 100);
+        promise2 = gol.getViewport(-50, -50, 200, 200);
+        //promise2 = gol.getViewport(1, 1, 3, 3);
+
+        function printGridToConsole(grid) {
+            var x, xmax, y, ymax, row, str = '', state;
+            for ( y=0, ymax=grid.length; y<ymax; y++ ) {
+                row = grid[y];
+                for ( x=0, xmax=row.length; x<xmax; x++ ) {
+                    state = row[x];
+                    if ( state === true ) {
+                        str += 'X';
+                    } else if ( state === false ) {
+                        str += '-';
+                    } else {
+                        str += '.';
+                    }
+                }
+                str += '\n';
+            }
+            console.log(str);
+        }
+        // promise1.progress(printGridToConsole);
+        // promise2.progress(printGridToConsole);
+
+
+        var canvas1 = document.getElementById('viewport-1');
+        var canvas2 = document.getElementById('viewport-2');
+        var context1 = canvas1.getContext('2d');
+        var context2 = canvas2.getContext('2d');
+        var cell_size_1 = 4;
+        var cell_size_2 = 2;
+        context1.fillStyle = 'rgb(0, 0, 0)';
+        function printGridToCanvas(context, grid, cell_size) {
+            context.clearRect(0, 0, grid.length*cell_size, grid[0].length*cell_size);
+            var x, xmax, y, ymax, row, state;
+            for ( y=0, ymax=grid.length; y<ymax; y++ ) {
+                row = grid[y];
+                for ( x=0, xmax=row.length; x<xmax; x++ ) {
+                    state = row[x];
+                    if ( state === true ) {
+                        context.fillRect(x*cell_size, y*cell_size, cell_size, cell_size);
+                    }
+                }
+            }
+        }
+        promise1.progress(function(grid) {
+            printGridToCanvas(context1, grid, cell_size_1);
+        });
+        promise2.progress(function(grid) {
+            printGridToCanvas(context2, grid, cell_size_2);
+        });
+
+
+        generations = 400;
+        count = 0;
+        (function loop() {
+            gol.advance();
+            generation_counter.innerHTML = count;
+            if ( count++ < generations ) {
+                setTimeout(loop, 1);
+            }
+        })();
+    </script>
+</body>
+</html>
